@@ -319,17 +319,16 @@ class Gestuelle {
   }
 
   private onPointerCancel = (event: PointerEvent): void => {
-    const primaryPointer = this.activePointers.get(event.pointerId)
-
-    if (!primaryPointer || event.pointerId !== primaryPointer.id) {
+    if (!this.activePointers.has(event.pointerId)) {
       return
     }
+
+    const primaryPointer = this.activePointers.get(event.pointerId)!
 
     this.element.releasePointerCapture(event.pointerId)
     this.activePointers.delete(event.pointerId)
     this.clearPressTimeout()
 
-    // Dispatch appropriate cancel event based on current state
     switch (this.currentGestureState) {
       case GestureState.POSSIBLE_TAP:
       case GestureState.PRESSING:
@@ -352,8 +351,6 @@ class Gestuelle {
           pointerType: primaryPointer.pointerType,
           target: this.element,
         })
-        break
-      default:
         break
     }
 
