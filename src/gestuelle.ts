@@ -292,20 +292,6 @@ class Gestuelle {
             distance: distance,
           })
 
-          // Also dispatch specific directional swipe events
-          if (direction) {
-            this.dispatchGestureEvent(`swipe`, {
-              x: primaryPointer.currentX,
-              y: primaryPointer.currentY,
-              pointerType: primaryPointer.pointerType,
-              target: this.element,
-              velocityX: velocityX,
-              velocityY: velocityY,
-              velocity: velocity,
-              direction: direction,
-              distance: distance,
-            })
-          }
           this.currentGestureState = GestureState.SWIPING
         } else {
           // Not a swipe, just a regular pan end
