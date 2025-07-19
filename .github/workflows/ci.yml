@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: 'continuous-integration'
+  group: "continuous-integration"
   cancel-in-progress: true
 
 jobs:
@@ -25,9 +25,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          registry-url: 'https://registry.npmjs.org'
-          cache: 'pnpm'
+          registry-url: "https://registry.npmjs.org"
+          cache: "pnpm"
 
       - run: pnpm i
-      - run: pnpm tsc --noEmit
+      - run: pnpm biome check
+      - run: pnpm test
       - run: pnpm build
