@@ -419,3 +419,7 @@ class Gestuelle {
 export function createGestuelle(element: HTMLElement, config?: GestuelleConfig): Gestuelle {
   return new Gestuelle(element, config ?? {})
 }
+
+declare global {
+  interface HTMLElementEventMap extends GestuelleEventMap {}
+}

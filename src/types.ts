@@ -145,17 +145,6 @@ export interface GestuelleConfig {
   swipe?: SwipeGestureConfig
 }
 
-/**
- * Overall configuration for the Gestuelle library, specifying options for each gesture.
- */
-export interface GestuelleConfig {
-  /** Configuration specific to the pan gesture. */
-  pan?: PanGestureConfig
-}
-
-// Union type for all possible custom event details
-export type GestuelleEventDetail = PanEventDetail | TapEventDetail | PressEventDetail | SwipeEventDetail
-
 export interface GestuelleEventMap {
   panstart: CustomEvent<PanEventDetail>
   panmove: CustomEvent<PanEventDetail>
@@ -166,18 +155,4 @@ export interface GestuelleEventMap {
   pressend: CustomEvent<PressEventDetail>
   presscancel: CustomEvent<PressEventDetail>
   swipe: CustomEvent<SwipeEventDetail>
-}
-
-declare global {
-  interface HTMLElementEventMap {
-    panstart: CustomEvent<PanEventDetail>
-    panmove: CustomEvent<PanEventDetail>
-    panend: CustomEvent<PanEventDetail>
-    pancancel: CustomEvent<PanEventDetail>
-    tap: CustomEvent<TapEventDetail>
-    pressstart: CustomEvent<PressEventDetail>
-    pressend: CustomEvent<PressEventDetail>
-    presscancel: CustomEvent<PressEventDetail>
-    swipe: CustomEvent<SwipeEventDetail>
-  }
 }
