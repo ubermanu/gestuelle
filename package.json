@@ -16,25 +16,21 @@
   ],
   "scripts": {
     "build": "tsc && vite build",
-    "format": "prettier -w .",
+    "format": "biome format --write",
     "prepare": "husky",
     "test": "vitest --run"
   },
   "lint-staged": {
-    "*.{js,ts,md,css,html,json}": "prettier -w",
-    "*.{js,ts}": [
-      "sh -c 'tsc --noEmit'",
-      "vitest related --run"
-    ]
+    "*.{js,ts,md,css,html,json}": "biome check --write",
+    "*.{js,ts}": "vitest related --run"
   },
-  "prettier": "@ubermanu/prettier-config",
   "devDependencies": {
+    "@biomejs/biome": "^2.1.2",
     "@changesets/cli": "^2.29.5",
     "@types/node": "^24.0.15",
-    "@ubermanu/prettier-config": "^3.4.1",
+    "@ubermanu/biome-config": "^0.1.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.2",
-    "prettier": "^3.6.2",
     "typescript": "~5.8.3",
     "vite": "^7.0.4",
     "vite-plugin-dts": "^4.5.4",
