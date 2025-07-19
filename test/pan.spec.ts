@@ -60,7 +60,7 @@ describe('Pan', () => {
     ])
 
     expect(panStartListener).toHaveBeenCalledTimes(1)
-    expect(panMoveListener).toHaveBeenCalledTimes(2)
+    expect(panMoveListener).toHaveBeenCalledTimes(1)
     expect(panEndListener).toHaveBeenCalledTimes(1)
   })
 
