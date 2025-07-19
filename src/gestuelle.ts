@@ -1,4 +1,10 @@
-import { type GestuelleConfig, type GestuelleEventMap, GestureState, type PointerType } from './types'
+import {
+  type GestuelleConfig,
+  type GestuelleEventMap,
+  GestureState,
+  type PointerType,
+  type SwipeDirection,
+} from './types'
 
 interface ActivePointer {
   /** The unique ID of the pointer. */
@@ -28,9 +34,7 @@ class Gestuelle {
   private activePointers: Map<number, ActivePointer> = new Map()
   private currentGestureState: GestureState = GestureState.IDLE
 
-  // Timers for tap and press detection
   private pressTimeoutId: number | null = null
-  // private tapStartTimeoutId: number | null = null;
 
   // Initial coordinates for gesture start (used for pan, tap, press distance calculations)
   private gestureStartX: number = 0
@@ -40,8 +44,6 @@ class Gestuelle {
     this.element = element
     this.config = config
     this.addEventListeners()
-    // TODO: Make this optional (check the computed styles of the element).
-    this.element.style.touchAction = 'none'
   }
 
   private addEventListeners(): void {
@@ -85,7 +87,6 @@ class Gestuelle {
 
     this.currentGestureState = GestureState.POSSIBLE_TAP
 
-    // Start press timeout
     const pressConfig = this.config.press
     const minPressDuration = pressConfig?.minDuration ?? 500
     this.pressTimeoutId = window.setTimeout(this.onPressTimeout, minPressDuration)
@@ -216,11 +217,11 @@ class Gestuelle {
    * This signals the end of a pointer interaction and potentially a pan gesture.
    */
   private onPointerUp = (event: PointerEvent): void => {
-    const primaryPointer = this.activePointers.get(event.pointerId)
-
-    if (!primaryPointer || event.pointerId !== primaryPointer.id) {
+    if (!this.activePointers.has(event.pointerId)) {
       return
     }
+
+    const primaryPointer = this.activePointers.get(event.pointerId)!
 
     // Release pointer capture immediately
     this.element.releasePointerCapture(event.pointerId)
@@ -231,7 +232,6 @@ class Gestuelle {
     const offsetY = primaryPointer.currentY - this.gestureStartY
     const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY)
 
-    // FSM Logic for pointerup
     switch (this.currentGestureState) {
       case GestureState.POSSIBLE_TAP: {
         this.clearPressTimeout()
@@ -263,7 +263,7 @@ class Gestuelle {
 
       case GestureState.PANNING: {
         const swipeConfig = this.config.swipe
-        const minSwipeVelocity = swipeConfig?.minVelocity ?? 0.3 // px/ms
+        const minSwipeVelocity = swipeConfig?.minVelocity ?? 0.3
         const minSwipeDistance = swipeConfig?.minDistance ?? 30
         const maxSwipeDuration = swipeConfig?.maxDuration ?? 300
 
@@ -272,7 +272,8 @@ class Gestuelle {
         const velocity = Math.sqrt(velocityX * velocityX + velocityY * velocityY)
 
         if (velocity >= minSwipeVelocity && distance >= minSwipeDistance && duration <= maxSwipeDuration) {
-          let direction: 'up' | 'down' | 'left' | 'right' | '' = ''
+          let direction: SwipeDirection | undefined
+
           if (Math.abs(offsetX) > Math.abs(offsetY)) {
             direction = offsetX > 0 ? 'right' : 'left'
           } else {
@@ -322,13 +323,12 @@ class Gestuelle {
         break
       }
 
-      case GestureState.IDLE: // Should not happen if pointerdown was handled
-      case GestureState.SWIPING: // Should not happen if already swiping
-      case GestureState.CANCELED: // Should not happen if already canceled
+      case GestureState.IDLE:
+      case GestureState.SWIPING:
+      case GestureState.CANCELED:
         break
     }
 
-    // Reset state after processing pointerup
     this.resetGestureState()
   }
 
@@ -368,7 +368,6 @@ class Gestuelle {
         })
         break
       default:
-        // No specific cancel event for IDLE or SWIPING (as swipe is an end state)
         break
     }
 
@@ -377,7 +376,6 @@ class Gestuelle {
 
   /**
    * Dispatches a custom gesture event from the target element.
-   * Uses a generic type parameter for the event detail.
    */
   private dispatchGestureEvent<K extends keyof GestuelleEventMap>(
     type: K,
@@ -401,7 +399,6 @@ class Gestuelle {
    */
   private resetGestureState(): void {
     this.currentGestureState = GestureState.IDLE
-    // Release captured pointers.
     this.activePointers.forEach((pointer) => {
       this.element.releasePointerCapture(pointer.id)
     })
@@ -412,7 +409,6 @@ class Gestuelle {
   public destroy() {
     this.removeEventListeners()
     this.resetGestureState()
-    this.element.style.touchAction = ''
   }
 }
 
@@ -421,5 +417,8 @@ export function createGestuelle(element: HTMLElement, config?: GestuelleConfig):
 }
 
 declare global {
+  // Augment the HTMLElement events with the gesture ones
   interface HTMLElementEventMap extends GestuelleEventMap {}
 }
+
+export * from './types'

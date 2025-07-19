@@ -62,10 +62,12 @@ export interface SwipeEventDetail extends GestureEventDetail {
   /** The overall magnitude of the swipe velocity. */
   velocity: number
   /** The direction of the swipe ('up', 'down', 'left', 'right'). */
-  direction: 'up' | 'down' | 'left' | 'right'
+  direction: SwipeDirection
   /** The total distance moved during the swipe. */
   distance: number
 }
+
+export type SwipeDirection = 'up' | 'down' | 'left' | 'right'
 
 /**
  * Configuration options for the pan gesture.
