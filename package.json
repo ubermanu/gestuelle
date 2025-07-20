@@ -27,7 +27,7 @@
     "url": "https://github.com/ubermanu/gestuelle.git"
   },
   "lint-staged": {
-    "*.{js,ts,md,css,html,json,jsonc}": "biome check --write",
+    "*.{js,ts,css,html,json,jsonc}": "biome check --write",
     "*.{js,ts}": "vitest related --run"
   },
   "devDependencies": {
