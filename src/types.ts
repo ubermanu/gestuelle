@@ -20,8 +20,6 @@ interface GestureEventDetail {
   y: number
   /** The type of pointer that triggered the event (e.g., "mouse", "touch", "pen"). */
   pointerType: PointerType
-  /** The DOM element on which the gesture started. */
-  target: EventTarget | null
 }
 
 /**

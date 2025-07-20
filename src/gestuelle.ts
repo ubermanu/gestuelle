@@ -103,7 +103,6 @@ class Gestuelle {
           x: primaryPointer.currentX,
           y: primaryPointer.currentY,
           pointerType: primaryPointer.pointerType,
-          target: this.element,
           duration: performance.now() - primaryPointer.downTime,
         })
       }
@@ -145,7 +144,6 @@ class Gestuelle {
             offsetX: offsetX,
             offsetY: offsetY,
             pointerType: pointer.pointerType,
-            target: this.element,
           })
         }
         break
@@ -160,7 +158,6 @@ class Gestuelle {
             x: pointer.currentX,
             y: pointer.currentY,
             pointerType: pointer.pointerType,
-            target: this.element,
             duration: performance.now() - pointer.downTime,
           })
           this.currentGestureState = GestureState.PANNING
@@ -172,7 +169,6 @@ class Gestuelle {
             offsetX: offsetX,
             offsetY: offsetY,
             pointerType: pointer.pointerType,
-            target: this.element,
           })
         }
         break
@@ -187,7 +183,6 @@ class Gestuelle {
           offsetX: offsetX,
           offsetY: offsetY,
           pointerType: pointer.pointerType,
-          target: this.element,
         })
         break
 
@@ -226,7 +221,6 @@ class Gestuelle {
             x: pointer.currentX,
             y: pointer.currentY,
             pointerType: pointer.pointerType,
-            target: this.element,
           })
         }
         break
@@ -238,7 +232,6 @@ class Gestuelle {
           x: pointer.currentX,
           y: pointer.currentY,
           pointerType: pointer.pointerType,
-          target: this.element,
           duration: duration,
         })
         break
@@ -266,7 +259,6 @@ class Gestuelle {
             x: pointer.currentX,
             y: pointer.currentY,
             pointerType: pointer.pointerType,
-            target: this.element,
             velocityX: velocityX,
             velocityY: velocityY,
             velocity: velocity,
@@ -285,7 +277,6 @@ class Gestuelle {
             offsetX: offsetX,
             offsetY: offsetY,
             pointerType: pointer.pointerType,
-            target: this.element,
           })
         }
         break
@@ -318,7 +309,6 @@ class Gestuelle {
           x: pointer.currentX,
           y: pointer.currentY,
           pointerType: pointer.pointerType,
-          target: this.element,
           duration: performance.now() - pointer.downTime,
         })
         break
@@ -331,7 +321,6 @@ class Gestuelle {
           offsetX: pointer.currentX - this.gestureStartX,
           offsetY: pointer.currentY - this.gestureStartY,
           pointerType: pointer.pointerType,
-          target: this.element,
         })
         break
     }
