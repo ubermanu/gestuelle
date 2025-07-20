@@ -12,12 +12,6 @@ describe('Pan', () => {
   let panEndListener: ReturnType<typeof vi.fn>
   let panCancelListener: ReturnType<typeof vi.fn>
 
-  const capturedPointers = new Set<number>()
-
-  window.HTMLElement.prototype.hasPointerCapture = (pointerId: number) => capturedPointers.has(pointerId)
-  window.HTMLElement.prototype.setPointerCapture = (pointerId: number) => capturedPointers.add(pointerId)
-  window.HTMLElement.prototype.releasePointerCapture = (pointerId: number) => capturedPointers.delete(pointerId)
-
   beforeEach(() => {
     document.body.innerHTML = `
       <div data-testid="element" style="position:absolute; top:0; left:0; width:100px; height:100px;"></div>
