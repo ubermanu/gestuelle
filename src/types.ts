@@ -57,7 +57,9 @@ export interface PressEventDetail extends GestureEventDetail {
 export interface PinchEventDetail extends GestureEventDetail {
   /** The distance between the two pointers. */
   distance: number
+  /** The center X coordinate between the two pointers. */
   centerX: number
+  /** The center Y coordinate between the two pointers. */
   centerY: number
 }
 
@@ -143,7 +145,14 @@ export interface SwipeGestureConfig {
   maxDuration?: number
 }
 
+/**
+ * Configuration options for the pinch gesture.
+ */
 interface PinchGestureConfig {
+  /**
+   * The minimum distance (in pixels) between the pointers to start a pinch.
+   * @default 5
+   */
   threshold?: number
 }
 
@@ -159,6 +168,7 @@ export interface GestuelleConfig {
   press?: PressGestureConfig
   /** Configuration specific to the swipe gesture. */
   swipe?: SwipeGestureConfig
+  /** Configuration specific to the pinch gesture. */
   pinch?: PinchGestureConfig
 }
 
