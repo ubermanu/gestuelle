@@ -7,9 +7,11 @@ export type PointerType = 'mouse' | 'touch' | 'pen' | string
 export enum GestureState {
   IDLE = 'IDLE',
   POSSIBLE_TAP = 'POSSIBLE_TAP',
+  POSSIBLE_MULTI_TOUCH = 'POSSIBLE_MULTI_TOUCH',
   PRESSING = 'PRESSING',
   PANNING = 'PANNING',
   SWIPING = 'SWIPING',
+  PINCHING = 'PINCHING',
   CANCELED = 'CANCELED',
 }
 
@@ -47,6 +49,16 @@ export interface TapEventDetail extends GestureEventDetail {}
 export interface PressEventDetail extends GestureEventDetail {
   /** The duration (in milliseconds) the pointer was held down for a press. */
   duration: number
+}
+
+/**
+ * Defines the detailed data provided with press gesture events.
+ */
+export interface PinchEventDetail extends GestureEventDetail {
+  /** The distance between the two pointers. */
+  distance: number
+  centerX: number
+  centerY: number
 }
 
 /**
@@ -131,6 +143,10 @@ export interface SwipeGestureConfig {
   maxDuration?: number
 }
 
+interface PinchGestureConfig {
+  threshold?: number
+}
+
 /**
  * Overall configuration for the Gestuelle library, specifying options for each gesture.
  */
@@ -143,6 +159,7 @@ export interface GestuelleConfig {
   press?: PressGestureConfig
   /** Configuration specific to the swipe gesture. */
   swipe?: SwipeGestureConfig
+  pinch?: PinchGestureConfig
 }
 
 export interface GestuelleEventMap {
@@ -155,4 +172,8 @@ export interface GestuelleEventMap {
   pressend: CustomEvent<PressEventDetail>
   presscancel: CustomEvent<PressEventDetail>
   swipe: CustomEvent<SwipeEventDetail>
+  pinchstart: CustomEvent<PinchEventDetail>
+  pinchmove: CustomEvent<PinchEventDetail>
+  pinchend: CustomEvent<PinchEventDetail>
+  pinchcancel: CustomEvent<PinchEventDetail>
 }

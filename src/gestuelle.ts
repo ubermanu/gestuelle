@@ -59,12 +59,6 @@ class Gestuelle {
   private onPointerDown = (event: PointerEvent): void => {
     event.preventDefault()
 
-    // If there are already an active pointer (e.g., multi-touch scenario where another
-    // finger is already down), ignore subsequent `pointerdown` events for pan.
-    if (this.activePointers.size > 0) {
-      return
-    }
-
     this.activePointers.set(event.pointerId, {
       id: event.pointerId,
       startX: event.clientX,
@@ -75,11 +69,37 @@ class Gestuelle {
       downTime: performance.now(),
     })
 
-    this.state = GestureState.POSSIBLE_TAP
+    if (this.activePointers.size === 1) {
+      // First pointer down: potential single-touch gestures
+      this.state = GestureState.POSSIBLE_TAP
 
-    const pressConfig = this.config.press
-    const minPressDuration = pressConfig?.minDuration ?? 500
-    this.pressTimeoutId = window.setTimeout(this.onPressTimeout, minPressDuration)
+      const pressConfig = this.config.press
+      const minPressDuration = pressConfig?.minDuration ?? 500
+      this.pressTimeoutId = window.setTimeout(this.onPressTimeout, minPressDuration)
+    } else if (this.activePointers.size === 2) {
+      // Second pointer down: potential multi-touch gestures
+      this.clearPressTimeout()
+
+      // Cancel any ongoing panning gesture
+      if (this.state === GestureState.PANNING) {
+        const primaryPointer = this.activePointers.values().next().value
+        if (primaryPointer) {
+          this.dispatchGestureEvent('pancancel', {
+            x: primaryPointer.currentX,
+            y: primaryPointer.currentY,
+            deltaX: 0,
+            deltaY: 0,
+            offsetX: primaryPointer.currentX - primaryPointer.startX,
+            offsetY: primaryPointer.currentY - primaryPointer.startY,
+            pointerType: primaryPointer.pointerType,
+          })
+        }
+      }
+
+      this.state = GestureState.POSSIBLE_MULTI_TOUCH
+    } else {
+      return
+    }
 
     // Request pointer capture. This ensures that subsequent `pointermove`,
     // `pointerup`, and `pointercancel` events for this pointerId will be
@@ -89,15 +109,23 @@ class Gestuelle {
 
   private onPressTimeout = (): void => {
     if (this.state === GestureState.POSSIBLE_TAP) {
-      this.state = GestureState.PRESSING
-      const primaryPointer = this.activePointers.values().next().value
-      if (primaryPointer) {
-        this.dispatchGestureEvent('pressstart', {
-          x: primaryPointer.currentX,
-          y: primaryPointer.currentY,
-          pointerType: primaryPointer.pointerType,
-          duration: performance.now() - primaryPointer.downTime,
-        })
+      const pointer = this.activePointers.values().next().value
+      if (pointer) {
+        const pressConfig = this.config.press
+        const maxPressDistance = pressConfig?.maxDistance ?? 10
+        const distance = Math.sqrt((pointer.currentX - pointer.startX) ** 2 + (pointer.currentY - pointer.startY) ** 2)
+
+        if (distance <= maxPressDistance) {
+          this.state = GestureState.PRESSING
+          this.dispatchGestureEvent('pressstart', {
+            x: pointer.currentX,
+            y: pointer.currentY,
+            pointerType: pointer.pointerType,
+            duration: performance.now() - pointer.downTime,
+          })
+        } else {
+          this.resetGestureState()
+        }
       }
     }
     this.pressTimeoutId = null
@@ -110,6 +138,45 @@ class Gestuelle {
       return
     }
 
+    if (this.activePointers.size === 2) {
+      const [p1, p2] = this.activePointers.values()
+
+      const centerX = (p1.startX + p2.startX) / 2
+      const centerY = (p1.startY + p2.startY) / 2
+
+      const distance = Math.sqrt((p2.currentX - p1.currentX) ** 2 + (p2.currentY - p1.currentY) ** 2)
+
+      if (this.state === GestureState.POSSIBLE_MULTI_TOUCH) {
+        const pinchConfig = this.config.pinch
+        const pinchThreshold = pinchConfig?.threshold ?? 5
+
+        if (distance >= pinchThreshold) {
+          this.state = GestureState.PINCHING
+          this.dispatchGestureEvent('pinchstart', {
+            x: centerX,
+            y: centerY,
+            pointerType: pointer.pointerType,
+            centerX: centerX,
+            centerY: centerY,
+            distance: distance,
+          })
+        }
+      }
+
+      if (this.state === GestureState.PINCHING) {
+        this.dispatchGestureEvent('pinchmove', {
+          x: centerX,
+          y: centerY,
+          pointerType: pointer.pointerType,
+          centerX: centerX,
+          centerY: centerY,
+          distance: distance,
+        })
+      }
+
+      return
+    }
+
     const deltaX = event.clientX - pointer.currentX
     const deltaY = event.clientY - pointer.currentY
 
@@ -118,15 +185,15 @@ class Gestuelle {
 
     const offsetX = pointer.currentX - pointer.startX
     const offsetY = pointer.currentY - pointer.startY
-    const currentDistance = Math.sqrt(offsetX * offsetX + offsetY * offsetY)
-
-    const panConfig = this.config.pan
-    const panThreshold = panConfig?.threshold ?? 5
+    const distance = Math.sqrt(offsetX ** 2 + offsetY ** 2)
 
     switch (this.state) {
-      case GestureState.POSSIBLE_TAP:
-        // If movement exceeds tap/press max distance, it's no longer a tap/press
-        if (currentDistance >= panThreshold) {
+      case GestureState.POSSIBLE_TAP: {
+        const panConfig = this.config.pan
+        const panThreshold = panConfig?.threshold ?? 5
+
+        // If movement exceeds the pan threshold, starts it
+        if (distance >= panThreshold) {
           this.clearPressTimeout()
           this.state = GestureState.PANNING
           this.dispatchGestureEvent('panstart', {
@@ -140,13 +207,14 @@ class Gestuelle {
           })
         }
         break
+      }
 
       case GestureState.PRESSING: {
         const pressConfig = this.config.press
         const maxPressDistance = pressConfig?.maxDistance ?? 10
 
         // If a press moves too far, it cancels the press and might become a pan
-        if (currentDistance >= maxPressDistance) {
+        if (distance >= maxPressDistance) {
           this.dispatchGestureEvent('presscancel', {
             x: pointer.currentX,
             y: pointer.currentY,
@@ -197,88 +265,111 @@ class Gestuelle {
     this.element.releasePointerCapture(event.pointerId)
     this.activePointers.delete(event.pointerId)
 
-    const duration = performance.now() - pointer.downTime
-    const offsetX = pointer.currentX - pointer.startX
-    const offsetY = pointer.currentY - pointer.startY
-    const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY)
+    // Handle multi-touch pointer up first (if one pointer remains)
+    if (this.activePointers.size === 1) {
+      const [otherPointer] = this.activePointers.values()
 
-    switch (this.state) {
-      case GestureState.POSSIBLE_TAP: {
-        this.clearPressTimeout()
-        const tapConfig = this.config.tap
-        const maxTapDuration = tapConfig?.maxDuration ?? 250
-        const maxTapDistance = tapConfig?.maxDistance ?? 10
+      const centerX = (pointer.startX + otherPointer.startX) / 2
+      const centerY = (pointer.startY + otherPointer.startY) / 2
 
-        if (duration <= maxTapDuration && distance <= maxTapDistance) {
-          this.dispatchGestureEvent('tap', {
+      const distance = Math.sqrt(
+        (otherPointer.currentX - pointer.currentX) ** 2 + (otherPointer.currentY - pointer.currentY) ** 2,
+      )
+
+      switch (this.state) {
+        case GestureState.PINCHING: {
+          this.dispatchGestureEvent('pinchend', {
             x: pointer.currentX,
             y: pointer.currentY,
             pointerType: pointer.pointerType,
-          })
-        }
-        break
-      }
-
-      case GestureState.PRESSING:
-        this.clearPressTimeout()
-        this.dispatchGestureEvent('pressend', {
-          x: pointer.currentX,
-          y: pointer.currentY,
-          pointerType: pointer.pointerType,
-          duration: duration,
-        })
-        break
-
-      case GestureState.PANNING: {
-        const swipeConfig = this.config.swipe
-        const minSwipeVelocity = swipeConfig?.minVelocity ?? 0.3
-        const minSwipeDistance = swipeConfig?.minDistance ?? 30
-        const maxSwipeDuration = swipeConfig?.maxDuration ?? 300
-
-        const velocityX = offsetX / duration
-        const velocityY = offsetY / duration
-        const velocity = Math.sqrt(velocityX * velocityX + velocityY * velocityY)
-
-        if (velocity >= minSwipeVelocity && distance >= minSwipeDistance && duration <= maxSwipeDuration) {
-          let direction: SwipeDirection | undefined
-
-          if (Math.abs(offsetX) > Math.abs(offsetY)) {
-            direction = offsetX > 0 ? 'right' : 'left'
-          } else {
-            direction = offsetY > 0 ? 'down' : 'up'
-          }
-
-          this.dispatchGestureEvent('swipe', {
-            x: pointer.currentX,
-            y: pointer.currentY,
-            pointerType: pointer.pointerType,
-            velocityX: velocityX,
-            velocityY: velocityY,
-            velocity: velocity,
-            direction: direction,
+            centerX: centerX,
+            centerY: centerY,
             distance: distance,
           })
-
-          this.state = GestureState.SWIPING
-        } else {
-          // Not a swipe, just a regular pan end
-          this.dispatchGestureEvent('panend', {
-            x: pointer.currentX,
-            y: pointer.currentY,
-            deltaX: 0,
-            deltaY: 0,
-            offsetX: offsetX,
-            offsetY: offsetY,
-            pointerType: pointer.pointerType,
-          })
+          break
         }
-        break
       }
 
-      case GestureState.IDLE:
-      case GestureState.SWIPING:
-      case GestureState.CANCELED:
-        break
+      return
+    } else if (this.activePointers.size === 0) {
+      const offsetX = pointer.currentX - pointer.startX
+      const offsetY = pointer.currentY - pointer.startY
+      const distance = Math.sqrt(offsetX ** 2 + offsetY ** 2)
+      const duration = performance.now() - pointer.downTime
+
+      switch (this.state) {
+        case GestureState.POSSIBLE_TAP: {
+          this.clearPressTimeout()
+          const tapConfig = this.config.tap
+          const maxTapDuration = tapConfig?.maxDuration ?? 250
+          const maxTapDistance = tapConfig?.maxDistance ?? 10
+
+          if (duration <= maxTapDuration && distance <= maxTapDistance) {
+            this.dispatchGestureEvent('tap', {
+              x: pointer.currentX,
+              y: pointer.currentY,
+              pointerType: pointer.pointerType,
+            })
+          }
+          break
+        }
+
+        case GestureState.PRESSING:
+          this.clearPressTimeout()
+          this.dispatchGestureEvent('pressend', {
+            x: pointer.currentX,
+            y: pointer.currentY,
+            pointerType: pointer.pointerType,
+            duration: duration,
+          })
+          break
+
+        case GestureState.PANNING: {
+          const swipeConfig = this.config.swipe
+          const minSwipeVelocity = swipeConfig?.minVelocity ?? 0.3
+          const minSwipeDistance = swipeConfig?.minDistance ?? 30
+          const maxSwipeDuration = swipeConfig?.maxDuration ?? 300
+
+          const velocityX = offsetX / duration
+          const velocityY = offsetY / duration
+          const velocity = Math.sqrt(velocityX ** 2 + velocityY ** 2)
+
+          if (velocity >= minSwipeVelocity && distance >= minSwipeDistance && duration <= maxSwipeDuration) {
+            let direction: SwipeDirection | undefined
+
+            if (Math.abs(offsetX) > Math.abs(offsetY)) {
+              direction = offsetX > 0 ? 'right' : 'left'
+            } else {
+              direction = offsetY > 0 ? 'down' : 'up'
+            }
+
+            this.state = GestureState.SWIPING
+
+            this.dispatchGestureEvent('swipe', {
+              x: pointer.currentX,
+              y: pointer.currentY,
+              pointerType: pointer.pointerType,
+              velocityX: velocityX,
+              velocityY: velocityY,
+              velocity: velocity,
+              direction: direction,
+              distance: distance,
+            })
+          } else {
+            // Not a swipe, just a regular pan end
+            this.dispatchGestureEvent('panend', {
+              x: pointer.currentX,
+              y: pointer.currentY,
+              deltaX: 0,
+              deltaY: 0,
+              offsetX: offsetX,
+              offsetY: offsetY,
+              pointerType: pointer.pointerType,
+            })
+          }
+          break
+        }
+      }
     }
 
     this.resetGestureState()
