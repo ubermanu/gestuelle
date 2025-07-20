@@ -1,10 +1,8 @@
-import { screen } from '@testing-library/dom'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createGestuelle } from '../src/gestuelle'
 
 describe('Pan', () => {
-  let element: HTMLElement
   let gestuelleInstance: ReturnType<typeof createGestuelle>
 
   let panStartListener: ReturnType<typeof vi.fn>
@@ -13,31 +11,29 @@ describe('Pan', () => {
   let panCancelListener: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
-    document.body.innerHTML = `
-      <div data-testid="element" style="position:absolute; top:0; left:0; width:100px; height:100px;"></div>
-    `
-    element = screen.getByTestId('element')
-
     panStartListener = vi.fn()
     panMoveListener = vi.fn()
     panEndListener = vi.fn()
     panCancelListener = vi.fn()
 
-    element.addEventListener('panstart', panStartListener)
-    element.addEventListener('panmove', panMoveListener)
-    element.addEventListener('panend', panEndListener)
+    document.body.addEventListener('panstart', panStartListener)
+    document.body.addEventListener('panmove', panMoveListener)
+    document.body.addEventListener('panend', panEndListener)
 
-    gestuelleInstance = createGestuelle(element, { pan: { threshold: 5 } })
+    gestuelleInstance = createGestuelle(document.body, { pan: { threshold: 5 } })
   })
 
   afterEach(() => {
+    document.body.removeEventListener('panstart', panStartListener)
+    document.body.removeEventListener('panmove', panMoveListener)
+    document.body.removeEventListener('panend', panEndListener)
     gestuelleInstance.destroy()
   })
 
   it('should NOT send an implicit pointerup event after only pointerdown', async () => {
     const user = userEvent.setup()
 
-    await user.pointer([{ keys: '[MouseLeft]', target: element, coords: { clientX: 10, clientY: 10 } }])
+    await user.pointer('[MouseLeft]')
 
     expect(panEndListener).not.toHaveBeenCalled()
     expect(panCancelListener).not.toHaveBeenCalled()
@@ -47,7 +43,7 @@ describe('Pan', () => {
     const user = userEvent.setup()
 
     await user.pointer([
-      { keys: '[MouseLeft>]', target: element, coords: { clientX: 10, clientY: 10 }, pointerName: 'mouse' },
+      { keys: '[MouseLeft>]', coords: { clientX: 10, clientY: 10 }, pointerName: 'mouse' },
       { coords: { clientX: 10, clientY: 20 } },
       { coords: { clientX: 10, clientY: 30 } },
       { keys: '[/MouseLeft]' },
@@ -62,7 +58,7 @@ describe('Pan', () => {
     const user = userEvent.setup()
 
     await user.pointer([
-      { keys: '[MouseLeft>]', target: element, coords: { clientX: 10, clientY: 10 } },
+      { keys: '[MouseLeft>]', coords: { clientX: 10, clientY: 10 } },
       { coords: { clientX: 12, clientY: 12 } },
       { keys: '[/MouseLeft]' },
     ])
