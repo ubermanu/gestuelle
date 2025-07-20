@@ -1,15 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/html-vite'
 import { createGestuelle } from '../src/gestuelle'
-import type { PanGestureConfig, PressGestureConfig, SwipeGestureConfig, TapGestureConfig } from '../src/types'
+import type { GestuelleConfig } from '../src/types'
 
-interface ElementProps {
-  panConfig?: PanGestureConfig
-  tapConfig?: TapGestureConfig
-  pressConfig?: PressGestureConfig
-  swipeConfig?: SwipeGestureConfig
-}
-
-function createElement(args: ElementProps) {
+function createElement(config: GestuelleConfig) {
   const box = document.createElement('div')
   box.style.cssText = `
     position: absolute;
@@ -38,17 +31,12 @@ function createElement(args: ElementProps) {
   box.textContent = 'Touch or Click Me!'
 
   setTimeout(() => {
-    createGestuelle(box, {
-      pan: args.panConfig,
-      tap: args.tapConfig,
-      press: args.pressConfig,
-      swipe: args.swipeConfig,
-    })
+    createGestuelle(box, config)
 
     let currentX = box.offsetLeft
     let currentY = box.offsetTop
 
-    if (args.panConfig) {
+    if (config.pan) {
       box.addEventListener('panstart', () => {
         const rect = box.getBoundingClientRect()
         currentX = rect.left
@@ -90,7 +78,7 @@ function createElement(args: ElementProps) {
       })
     }
 
-    if (args.tapConfig) {
+    if (config.tap) {
       box.addEventListener('tap', () => {
         box.textContent = `TAP!`
         box.style.backgroundColor = '#2196F3'
@@ -103,7 +91,7 @@ function createElement(args: ElementProps) {
       })
     }
 
-    if (args.pressConfig) {
+    if (config.press) {
       box.addEventListener('pressstart', () => {
         box.textContent = `Pressing...`
         box.style.backgroundColor = '#FF5722'
@@ -129,7 +117,7 @@ function createElement(args: ElementProps) {
       })
     }
 
-    if (args.swipeConfig) {
+    if (config.swipe) {
       box.addEventListener('swipe', (event) => {
         box.textContent = `SWIPE ${event.detail.direction.toUpperCase()}! Vel: ${event.detail.velocity.toFixed(2)}`
         box.style.backgroundColor = '#9C27B0'
@@ -141,71 +129,88 @@ function createElement(args: ElementProps) {
         }, 500)
       })
     }
-  }, 0)
+
+    if (config.pinch) {
+      box.addEventListener('pinchstart', () => {
+        box.textContent = `Pinching...`
+        box.style.backgroundColor = '#FF5722'
+        box.style.border = '4px solid #E64A19'
+      })
+
+      box.addEventListener('pinchmove', (event) => {
+        box.textContent = `Pinching... (Distance: ${event.detail.distance.toFixed(0)}px)`
+        box.style.backgroundColor = '#FF5722'
+        box.style.border = '4px solid #E64A19'
+      })
+
+      box.addEventListener('pinchend', (event) => {
+        box.textContent = `Pinch End!`
+        box.style.backgroundColor = '#4CAF50'
+        box.style.border = '4px solid #388E3C'
+        setTimeout(() => {
+          box.textContent = 'Touch or Click Me!'
+        }, 500)
+      })
+
+      box.addEventListener('pinchcancel', () => {
+        box.textContent = `Pinch Cancelled!`
+        box.style.backgroundColor = '#F44336'
+        box.style.border = '4px solid #D32F2F'
+        setTimeout(() => {
+          box.textContent = 'Touch or Click Me!'
+        }, 500)
+      })
+    }
+  })
 
   return box
 }
 
-const meta: Meta<ElementProps> = {
+const meta: Meta<GestuelleConfig> = {
   title: 'Gestures',
-  render: (args: ElementProps) => createElement(args),
-  argTypes: {
-    panConfig: {
-      control: 'object',
-      description: 'Configuration for the Pan gesture (threshold).',
-      defaultValue: { threshold: 5 },
-    },
-    tapConfig: {
-      control: 'object',
-      description: 'Configuration for the Tap gesture (maxDuration, maxDistance).',
-      defaultValue: { maxDuration: 250, maxDistance: 10 },
-    },
-    pressConfig: {
-      control: 'object',
-      description: 'Configuration for the Press gesture (minDuration, maxDistance).',
-      defaultValue: { minDuration: 500, maxDistance: 10 },
-    },
-    swipeConfig: {
-      control: 'object',
-      description: 'Configuration for the Swipe gesture (minVelocity, minDistance, maxDuration).',
-      defaultValue: { minVelocity: 0.3, minDistance: 30, maxDuration: 300 },
-    },
-  },
+  render: (args) => createElement(args),
 }
 
 export default meta
 
-type Story = StoryObj<ElementProps>
+type Story = StoryObj<GestuelleConfig>
 
 export const Default: Story = {
   args: {
-    panConfig: { threshold: 5 },
-    tapConfig: { maxDuration: 250, maxDistance: 10 },
-    pressConfig: { minDuration: 500, maxDistance: 10 },
-    swipeConfig: { minVelocity: 0.3, minDistance: 30, maxDuration: 300 },
+    pan: { threshold: 5 },
+    tap: { maxDuration: 250, maxDistance: 10 },
+    press: { minDuration: 500, maxDistance: 10 },
+    swipe: { minVelocity: 0.3, minDistance: 30, maxDuration: 300 },
+    pinch: { threshold: 5 },
   },
 }
 
 export const Pan: Story = {
   args: {
-    panConfig: { threshold: 5 },
+    pan: { threshold: 5 },
   },
 }
 
 export const Tap: Story = {
   args: {
-    tapConfig: { maxDuration: 250, maxDistance: 10 },
+    tap: { maxDuration: 250, maxDistance: 10 },
   },
 }
 
 export const Press: Story = {
   args: {
-    pressConfig: { minDuration: 500, maxDistance: 10 },
+    press: { minDuration: 500, maxDistance: 10 },
   },
 }
 
 export const Swipe: Story = {
   args: {
-    swipeConfig: { minVelocity: 0.3, minDistance: 30, maxDuration: 300 },
+    swipe: { minVelocity: 0.3, minDistance: 30, maxDuration: 300 },
+  },
+}
+
+export const Pinch: Story = {
+  args: {
+    pinch: { threshold: 5 },
   },
 }

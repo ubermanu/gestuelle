@@ -138,13 +138,19 @@ class Gestuelle {
       return
     }
 
+    // Update the values of the moved pointer
+    pointer.currentX = event.clientX
+    pointer.currentY = event.clientY
+    this.activePointers.set(pointer.id, pointer)
+
     if (this.activePointers.size === 2) {
-      const [p1, p2] = this.activePointers.values()
+      const otherPointer = Array.from(this.activePointers.values()).find((p) => p.id !== event.pointerId)!
 
-      const centerX = (p1.startX + p2.startX) / 2
-      const centerY = (p1.startY + p2.startY) / 2
-
-      const distance = Math.sqrt((p2.currentX - p1.currentX) ** 2 + (p2.currentY - p1.currentY) ** 2)
+      const centerX = (pointer.startX + otherPointer.startX) / 2
+      const centerY = (pointer.startY + otherPointer.startY) / 2
+      const distance = Math.sqrt(
+        (otherPointer.currentX - pointer.currentX) ** 2 + (otherPointer.currentY - pointer.currentY) ** 2,
+      )
 
       if (this.state === GestureState.POSSIBLE_MULTI_TOUCH) {
         const pinchConfig = this.config.pinch
