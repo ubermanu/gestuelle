@@ -60,9 +60,6 @@ class Gestuelle {
     this.element.removeEventListener('pointercancel', this.onPointerCancel)
   }
 
-  /**
-   * Entry point for starting a potential gesture.
-   */
   private onPointerDown = (event: PointerEvent): void => {
     event.preventDefault()
 
@@ -97,9 +94,6 @@ class Gestuelle {
     this.element.setPointerCapture(event.pointerId)
   }
 
-  /**
-   * Handles the timeout for a potential press gesture.
-   */
   private onPressTimeout = (): void => {
     if (this.currentGestureState === GestureState.POSSIBLE_TAP) {
       this.currentGestureState = GestureState.PRESSING
@@ -117,30 +111,21 @@ class Gestuelle {
     this.pressTimeoutId = null
   }
 
-  /**
-   * Detect if a gesture has started and update its progress.
-   */
   private onPointerMove = (event: PointerEvent): void => {
-    const primaryPointerId = this.activePointers.keys().next().value
+    const pointer = this.activePointers.get(event.pointerId)
 
-    if (!primaryPointerId) {
+    if (!pointer) {
       return
     }
 
-    const primaryPointer = this.activePointers.get(primaryPointerId)
+    const deltaX = event.clientX - pointer.currentX
+    const deltaY = event.clientY - pointer.currentY
 
-    if (!primaryPointer || event.pointerId !== primaryPointer.id) {
-      return
-    }
+    pointer.currentX = event.clientX
+    pointer.currentY = event.clientY
 
-    const deltaX = event.clientX - primaryPointer.currentX
-    const deltaY = event.clientY - primaryPointer.currentY
-
-    primaryPointer.currentX = event.clientX
-    primaryPointer.currentY = event.clientY
-
-    const offsetX = primaryPointer.currentX - this.gestureStartX
-    const offsetY = primaryPointer.currentY - this.gestureStartY
+    const offsetX = pointer.currentX - this.gestureStartX
+    const offsetY = pointer.currentY - this.gestureStartY
     const currentDistance = Math.sqrt(offsetX * offsetX + offsetY * offsetY)
 
     const panConfig = this.config.pan
@@ -153,13 +138,13 @@ class Gestuelle {
           this.clearPressTimeout()
           this.currentGestureState = GestureState.PANNING
           this.dispatchGestureEvent('panstart', {
-            x: primaryPointer.currentX,
-            y: primaryPointer.currentY,
+            x: pointer.currentX,
+            y: pointer.currentY,
             deltaX: deltaX,
             deltaY: deltaY,
             offsetX: offsetX,
             offsetY: offsetY,
-            pointerType: primaryPointer.pointerType,
+            pointerType: pointer.pointerType,
             target: this.element,
           })
         }
@@ -172,21 +157,21 @@ class Gestuelle {
         // If a press moves too far, it cancels the press and might become a pan
         if (currentDistance >= maxPressDistance) {
           this.dispatchGestureEvent('presscancel', {
-            x: primaryPointer.currentX,
-            y: primaryPointer.currentY,
-            pointerType: primaryPointer.pointerType,
+            x: pointer.currentX,
+            y: pointer.currentY,
+            pointerType: pointer.pointerType,
             target: this.element,
-            duration: performance.now() - primaryPointer.downTime,
+            duration: performance.now() - pointer.downTime,
           })
           this.currentGestureState = GestureState.PANNING
           this.dispatchGestureEvent('panstart', {
-            x: primaryPointer.currentX,
-            y: primaryPointer.currentY,
+            x: pointer.currentX,
+            y: pointer.currentY,
             deltaX: deltaX,
             deltaY: deltaY,
             offsetX: offsetX,
             offsetY: offsetY,
-            pointerType: primaryPointer.pointerType,
+            pointerType: pointer.pointerType,
             target: this.element,
           })
         }
@@ -195,13 +180,13 @@ class Gestuelle {
 
       case GestureState.PANNING:
         this.dispatchGestureEvent('panmove', {
-          x: primaryPointer.currentX,
-          y: primaryPointer.currentY,
+          x: pointer.currentX,
+          y: pointer.currentY,
           deltaX: deltaX,
           deltaY: deltaY,
           offsetX: offsetX,
           offsetY: offsetY,
-          pointerType: primaryPointer.pointerType,
+          pointerType: pointer.pointerType,
           target: this.element,
         })
         break
@@ -213,23 +198,20 @@ class Gestuelle {
     }
   }
 
-  /**
-   * This signals the end of a pointer interaction and potentially a pan gesture.
-   */
   private onPointerUp = (event: PointerEvent): void => {
-    if (!this.activePointers.has(event.pointerId)) {
+    const pointer = this.activePointers.get(event.pointerId)
+
+    if (!pointer) {
       return
     }
-
-    const primaryPointer = this.activePointers.get(event.pointerId)!
 
     // Release pointer capture immediately
     this.element.releasePointerCapture(event.pointerId)
     this.activePointers.delete(event.pointerId)
 
-    const duration = performance.now() - primaryPointer.downTime
-    const offsetX = primaryPointer.currentX - this.gestureStartX
-    const offsetY = primaryPointer.currentY - this.gestureStartY
+    const duration = performance.now() - pointer.downTime
+    const offsetX = pointer.currentX - this.gestureStartX
+    const offsetY = pointer.currentY - this.gestureStartY
     const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY)
 
     switch (this.currentGestureState) {
@@ -241,9 +223,9 @@ class Gestuelle {
 
         if (duration <= maxTapDuration && distance <= maxTapDistance) {
           this.dispatchGestureEvent('tap', {
-            x: primaryPointer.currentX,
-            y: primaryPointer.currentY,
-            pointerType: primaryPointer.pointerType,
+            x: pointer.currentX,
+            y: pointer.currentY,
+            pointerType: pointer.pointerType,
             target: this.element,
           })
         }
@@ -253,9 +235,9 @@ class Gestuelle {
       case GestureState.PRESSING:
         this.clearPressTimeout()
         this.dispatchGestureEvent('pressend', {
-          x: primaryPointer.currentX,
-          y: primaryPointer.currentY,
-          pointerType: primaryPointer.pointerType,
+          x: pointer.currentX,
+          y: pointer.currentY,
+          pointerType: pointer.pointerType,
           target: this.element,
           duration: duration,
         })
@@ -281,9 +263,9 @@ class Gestuelle {
           }
 
           this.dispatchGestureEvent('swipe', {
-            x: primaryPointer.currentX,
-            y: primaryPointer.currentY,
-            pointerType: primaryPointer.pointerType,
+            x: pointer.currentX,
+            y: pointer.currentY,
+            pointerType: pointer.pointerType,
             target: this.element,
             velocityX: velocityX,
             velocityY: velocityY,
@@ -296,13 +278,13 @@ class Gestuelle {
         } else {
           // Not a swipe, just a regular pan end
           this.dispatchGestureEvent('panend', {
-            x: primaryPointer.currentX,
-            y: primaryPointer.currentY,
+            x: pointer.currentX,
+            y: pointer.currentY,
             deltaX: 0,
             deltaY: 0,
             offsetX: offsetX,
             offsetY: offsetY,
-            pointerType: primaryPointer.pointerType,
+            pointerType: pointer.pointerType,
             target: this.element,
           })
         }
@@ -319,11 +301,11 @@ class Gestuelle {
   }
 
   private onPointerCancel = (event: PointerEvent): void => {
-    if (!this.activePointers.has(event.pointerId)) {
+    const pointer = this.activePointers.get(event.pointerId)
+
+    if (!pointer) {
       return
     }
-
-    const primaryPointer = this.activePointers.get(event.pointerId)!
 
     this.element.releasePointerCapture(event.pointerId)
     this.activePointers.delete(event.pointerId)
@@ -333,22 +315,22 @@ class Gestuelle {
       case GestureState.POSSIBLE_TAP:
       case GestureState.PRESSING:
         this.dispatchGestureEvent('presscancel', {
-          x: primaryPointer.currentX,
-          y: primaryPointer.currentY,
-          pointerType: primaryPointer.pointerType,
+          x: pointer.currentX,
+          y: pointer.currentY,
+          pointerType: pointer.pointerType,
           target: this.element,
-          duration: performance.now() - primaryPointer.downTime,
+          duration: performance.now() - pointer.downTime,
         })
         break
       case GestureState.PANNING:
         this.dispatchGestureEvent('pancancel', {
-          x: primaryPointer.currentX,
-          y: primaryPointer.currentY,
+          x: pointer.currentX,
+          y: pointer.currentY,
           deltaX: 0,
           deltaY: 0,
-          offsetX: primaryPointer.currentX - this.gestureStartX,
-          offsetY: primaryPointer.currentY - this.gestureStartY,
-          pointerType: primaryPointer.pointerType,
+          offsetX: pointer.currentX - this.gestureStartX,
+          offsetY: pointer.currentY - this.gestureStartY,
+          pointerType: pointer.pointerType,
           target: this.element,
         })
         break
