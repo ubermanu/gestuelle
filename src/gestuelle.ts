@@ -36,10 +36,6 @@ class Gestuelle {
 
   private pressTimeoutId: number | null = null
 
-  // Initial coordinates for gesture start (used for pan, tap, press distance calculations)
-  private gestureStartX: number = 0
-  private gestureStartY: number = 0
-
   constructor(element: HTMLElement, config: GestuelleConfig) {
     this.element = element
     this.config = config
@@ -78,9 +74,6 @@ class Gestuelle {
       pointerType: event.pointerType,
       downTime: performance.now(),
     })
-
-    this.gestureStartX = event.clientX
-    this.gestureStartY = event.clientY
 
     this.state = GestureState.POSSIBLE_TAP
 
@@ -123,8 +116,8 @@ class Gestuelle {
     pointer.currentX = event.clientX
     pointer.currentY = event.clientY
 
-    const offsetX = pointer.currentX - this.gestureStartX
-    const offsetY = pointer.currentY - this.gestureStartY
+    const offsetX = pointer.currentX - pointer.startX
+    const offsetY = pointer.currentY - pointer.startY
     const currentDistance = Math.sqrt(offsetX * offsetX + offsetY * offsetY)
 
     const panConfig = this.config.pan
@@ -205,8 +198,8 @@ class Gestuelle {
     this.activePointers.delete(event.pointerId)
 
     const duration = performance.now() - pointer.downTime
-    const offsetX = pointer.currentX - this.gestureStartX
-    const offsetY = pointer.currentY - this.gestureStartY
+    const offsetX = pointer.currentX - pointer.startX
+    const offsetY = pointer.currentY - pointer.startY
     const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY)
 
     switch (this.state) {
@@ -318,8 +311,8 @@ class Gestuelle {
           y: pointer.currentY,
           deltaX: 0,
           deltaY: 0,
-          offsetX: pointer.currentX - this.gestureStartX,
-          offsetY: pointer.currentY - this.gestureStartY,
+          offsetX: pointer.currentX - pointer.startX,
+          offsetY: pointer.currentY - pointer.startY,
           pointerType: pointer.pointerType,
         })
         break
