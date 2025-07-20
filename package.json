@@ -22,6 +22,10 @@
     "dev": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ubermanu/gestuelle.git"
+  },
   "lint-staged": {
     "*.{js,ts,md,css,html,json,jsonc}": "biome check --write",
     "*.{js,ts}": "vitest related --run"
