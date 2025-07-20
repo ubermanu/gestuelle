@@ -139,12 +139,12 @@ class Gestuelle {
       return
     }
 
-    // Update the values of the moved pointer
-    pointer.currentX = event.clientX
-    pointer.currentY = event.clientY
-    this.activePointers.set(pointer.id, pointer)
-
     if (this.activePointers.size === 2) {
+      // Update the values of the moved pointer
+      pointer.currentX = event.clientX
+      pointer.currentY = event.clientY
+      this.activePointers.set(pointer.id, pointer)
+
       const otherPointer = Array.from(this.activePointers.values()).find((p) => p.id !== event.pointerId)!
 
       const centerX = (pointer.startX + otherPointer.startX) / 2
