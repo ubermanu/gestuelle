@@ -138,7 +138,7 @@ function createElement(config: GestuelleConfig) {
       })
 
       box.addEventListener('pinchmove', (event) => {
-        box.textContent = `Pinching... (Distance: ${event.detail.distance.toFixed(0)}px)`
+        box.textContent = `Pinching... (Distance: ${event.detail.distance.toFixed(0)}px, Angle: ${event.detail.angle.toFixed(0)}deg)`
         box.style.backgroundColor = '#FF5722'
         box.style.border = '4px solid #E64A19'
       })

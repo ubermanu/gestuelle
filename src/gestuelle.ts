@@ -5,6 +5,7 @@ import {
   type PointerType,
   type SwipeDirection,
 } from './types'
+import { rad2deg } from './utils'
 
 interface ActivePointer {
   /** The unique ID of the pointer. */
@@ -148,8 +149,12 @@ class Gestuelle {
 
       const centerX = (pointer.startX + otherPointer.startX) / 2
       const centerY = (pointer.startY + otherPointer.startY) / 2
+
       const distance = Math.sqrt(
         (otherPointer.currentX - pointer.currentX) ** 2 + (otherPointer.currentY - pointer.currentY) ** 2,
+      )
+      const angle = rad2deg(
+        Math.atan2(otherPointer.currentY - pointer.currentY, otherPointer.currentX - pointer.currentX),
       )
 
       if (this.state === GestureState.POSSIBLE_MULTI_TOUCH) {
@@ -165,6 +170,7 @@ class Gestuelle {
             centerX: centerX,
             centerY: centerY,
             distance: distance,
+            angle: angle,
           })
         }
       }
@@ -177,6 +183,7 @@ class Gestuelle {
           centerX: centerX,
           centerY: centerY,
           distance: distance,
+          angle: angle,
         })
       }
 
@@ -281,6 +288,9 @@ class Gestuelle {
       const distance = Math.sqrt(
         (otherPointer.currentX - pointer.currentX) ** 2 + (otherPointer.currentY - pointer.currentY) ** 2,
       )
+      const angle = rad2deg(
+        Math.atan2(otherPointer.currentY - pointer.currentY, otherPointer.currentX - pointer.currentX),
+      )
 
       switch (this.state) {
         case GestureState.PINCHING: {
@@ -291,6 +301,7 @@ class Gestuelle {
             centerX: centerX,
             centerY: centerY,
             distance: distance,
+            angle: angle,
           })
           break
         }

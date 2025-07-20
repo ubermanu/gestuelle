@@ -57,6 +57,8 @@ export interface PressEventDetail extends GestureEventDetail {
 export interface PinchEventDetail extends GestureEventDetail {
   /** The distance between the two pointers. */
   distance: number
+  /** The angle between the two pointers (in deg). */
+  angle: number
   /** The center X coordinate between the two pointers. */
   centerX: number
   /** The center Y coordinate between the two pointers. */
