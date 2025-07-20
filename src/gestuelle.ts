@@ -32,7 +32,7 @@ class Gestuelle {
   readonly config: GestuelleConfig
 
   private activePointers: Map<number, ActivePointer> = new Map()
-  private currentGestureState: GestureState = GestureState.IDLE
+  private state: GestureState = GestureState.IDLE
 
   private pressTimeoutId: number | null = null
 
@@ -82,7 +82,7 @@ class Gestuelle {
     this.gestureStartX = event.clientX
     this.gestureStartY = event.clientY
 
-    this.currentGestureState = GestureState.POSSIBLE_TAP
+    this.state = GestureState.POSSIBLE_TAP
 
     const pressConfig = this.config.press
     const minPressDuration = pressConfig?.minDuration ?? 500
@@ -95,8 +95,8 @@ class Gestuelle {
   }
 
   private onPressTimeout = (): void => {
-    if (this.currentGestureState === GestureState.POSSIBLE_TAP) {
-      this.currentGestureState = GestureState.PRESSING
+    if (this.state === GestureState.POSSIBLE_TAP) {
+      this.state = GestureState.PRESSING
       const primaryPointer = this.activePointers.values().next().value
       if (primaryPointer) {
         this.dispatchGestureEvent('pressstart', {
@@ -130,12 +130,12 @@ class Gestuelle {
     const panConfig = this.config.pan
     const panThreshold = panConfig?.threshold ?? 5
 
-    switch (this.currentGestureState) {
+    switch (this.state) {
       case GestureState.POSSIBLE_TAP:
         // If movement exceeds tap/press max distance, it's no longer a tap/press
         if (currentDistance >= panThreshold) {
           this.clearPressTimeout()
-          this.currentGestureState = GestureState.PANNING
+          this.state = GestureState.PANNING
           this.dispatchGestureEvent('panstart', {
             x: pointer.currentX,
             y: pointer.currentY,
@@ -160,7 +160,7 @@ class Gestuelle {
             pointerType: pointer.pointerType,
             duration: performance.now() - pointer.downTime,
           })
-          this.currentGestureState = GestureState.PANNING
+          this.state = GestureState.PANNING
           this.dispatchGestureEvent('panstart', {
             x: pointer.currentX,
             y: pointer.currentY,
@@ -209,7 +209,7 @@ class Gestuelle {
     const offsetY = pointer.currentY - this.gestureStartY
     const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY)
 
-    switch (this.currentGestureState) {
+    switch (this.state) {
       case GestureState.POSSIBLE_TAP: {
         this.clearPressTimeout()
         const tapConfig = this.config.tap
@@ -266,7 +266,7 @@ class Gestuelle {
             distance: distance,
           })
 
-          this.currentGestureState = GestureState.SWIPING
+          this.state = GestureState.SWIPING
         } else {
           // Not a swipe, just a regular pan end
           this.dispatchGestureEvent('panend', {
@@ -302,7 +302,7 @@ class Gestuelle {
     this.activePointers.delete(event.pointerId)
     this.clearPressTimeout()
 
-    switch (this.currentGestureState) {
+    switch (this.state) {
       case GestureState.POSSIBLE_TAP:
       case GestureState.PRESSING:
         this.dispatchGestureEvent('presscancel', {
@@ -352,7 +352,7 @@ class Gestuelle {
    * Resets the internal gesture state and clears any active pointers.
    */
   private resetGestureState(): void {
-    this.currentGestureState = GestureState.IDLE
+    this.state = GestureState.IDLE
     this.activePointers.forEach((pointer) => {
       this.element.releasePointerCapture(pointer.id)
     })
